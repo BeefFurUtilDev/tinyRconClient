@@ -5,7 +5,7 @@
         - '*'
   permissions:
     contents: write
-  jobs:
+  compile-job:
     windows-amd64:
       name: "compile for win-amd64"
       runs-on:
@@ -165,6 +165,7 @@
           uses: actions/upload-artifact@v4
           with:
             name: trc_linux_loong64
+            path: target/trc_linux_loong64
     macos-arm64:
       name: "compile for macos-arm64"
       runs-on:
@@ -196,6 +197,9 @@
           uses: actions/upload-artifact@v4
           with:
             name: trc_darwin_arm64
+            path: target/trc_darwin_arm64
+  upload-job:
+    needs: [compile-job]
     release:
       runs-on:
         - ubuntu-latest
