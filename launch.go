@@ -87,7 +87,7 @@ func newSession(clientSetup client) (err error) {
 				fmt.Println("")
 				continue
 			}
-			if stdInput == "exit" {
+			if stdInput == "exit" || stdInput == "stop" {
 				return nil
 			}
 			// 发送命令并处理结果
@@ -104,7 +104,7 @@ func newSession(clientSetup client) (err error) {
 				}
 				if err != nil {
 					log.Error().AnErr("conn error:", err).Msgf("can't connect to server")
-					return err
+					break
 				}
 			}
 			if err != nil {
@@ -113,10 +113,13 @@ func newSession(clientSetup client) (err error) {
 			}
 			if result == "" {
 				log.Info().Msg("no response.")
-			} else {
-				log.Info().Msg(result)
+				continue
 			}
+			log.Info().Msg(result)
 		}
 	}
+	defer func(conn *rcon.Conn) {
+		_ = conn.Close()
+	}(conn)
 	return
 }

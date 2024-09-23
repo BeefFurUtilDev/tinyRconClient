@@ -34,7 +34,6 @@ func execCommand(clientSetup *client, cmd *string) (result string, err error) {
 	defer func(conn *rcon.Conn) {
 		_ = conn.Close()
 	}(conn)
-
 	// 发送命令并接收结果。
 	result, err = conn.SendCommand(*cmd)
 	// 记录发送的命令。
