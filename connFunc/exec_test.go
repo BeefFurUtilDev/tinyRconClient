@@ -1,6 +1,7 @@
-package main
+package connFunc
 
 import (
+	"github.com/Mr-Ao-Dragon/tinyRconClient/types"
 	"os"
 	"testing"
 )
@@ -9,7 +10,7 @@ func Test_execCommand(t *testing.T) {
 	cmdTest1 := "spark tps"
 	cmdTest2 := "list"
 	type args struct {
-		clientSetup *client
+		clientSetup *types.Client
 		cmd         *string
 	}
 	tests := []struct {
@@ -22,10 +23,10 @@ func Test_execCommand(t *testing.T) {
 		{
 			name: "test",
 			args: args{
-				clientSetup: &client{
-					addr:     os.Getenv("IP"),
-					port:     25575,
-					password: os.Getenv("PASSWORD"),
+				clientSetup: &types.Client{
+					Addr:     os.Getenv("IP"),
+					Port:     25575,
+					Password: os.Getenv("PASSWORD"),
 				},
 				cmd: &cmdTest1,
 			},
@@ -35,10 +36,10 @@ func Test_execCommand(t *testing.T) {
 		{
 			name: "test2",
 			args: args{
-				clientSetup: &client{
-					addr:     os.Getenv("IP"),
-					port:     25575,
-					password: os.Getenv("PASSWORD"),
+				clientSetup: &types.Client{
+					Addr:     os.Getenv("IP"),
+					Port:     25575,
+					Password: os.Getenv("PASSWORD"),
 				},
 				cmd: &cmdTest2,
 			},
@@ -48,7 +49,7 @@ func Test_execCommand(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotResult, err := execCommand(tt.args.clientSetup, tt.args.cmd)
+			gotResult, err := ExecCommand(tt.args.clientSetup, tt.args.cmd)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("execCommand() error = %v, wantErr %v", err, tt.wantErr)
 				return

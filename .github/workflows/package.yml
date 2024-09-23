@@ -1,0 +1,21 @@
+name: "打包"
+on:
+  release:
+    types:
+      - created
+permissions:
+  public_repo: write
+jobs:
+  download_release_files_to_artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release files
+        uses: robinraju/release-downloader@v1
+        with:
+          last: true
+          fileName: "*"
+
+#  winget:
+#    runs-on: windows-latest
+#    steps:
+#      -

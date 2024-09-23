@@ -1,10 +1,11 @@
-package main
+package connFunc
 
 import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/gookit/color"
+	"github.com/Mr-Ao-Dragon/tinyRconClient/printUtil"
+	"github.com/Mr-Ao-Dragon/tinyRconClient/types"
 	"github.com/jltobler/go-rcon"
 	"github.com/rs/zerolog"
 	"io"
@@ -15,7 +16,7 @@ import (
 	"time"
 )
 
-// newSession 建立一个新的RCON会话。
+// NewSession 建立一个新的RCON会话。
 // 它尝试连接到一个Minecraft服务器，然后在一个循环中读取用户输入的命令并将其发送到服务器，直到会话被中断或用户决定退出。
 // 参数:
 //
@@ -24,7 +25,7 @@ import (
 // 返回值:
 //
 //	错误: 如果在建立连接或执行命令时发生错误，则返回相应的错误。
-func newSession(clientSetup client) (err error) {
+func NewSession(clientSetup types.Client) (err error) {
 	// 初始化日志输出格式和时间格式
 	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	log := zerolog.New(output).With().Timestamp().Logger()
@@ -32,7 +33,7 @@ func newSession(clientSetup client) (err error) {
 	log.Info().Msg("starting session...")
 
 	// 尝试连接到RCON服务器
-	conn, err := rcon.Dial("rcon://"+clientSetup.addr+":"+strconv.Itoa(clientSetup.port), clientSetup.password)
+	conn, err := rcon.Dial("rcon://"+clientSetup.Addr+":"+strconv.Itoa(clientSetup.Port), clientSetup.Password)
 	if err != nil {
 		log.Error().AnErr("conn error:", err).Msgf("can't connect to server")
 		return err
@@ -55,14 +56,7 @@ func newSession(clientSetup client) (err error) {
 			return nil
 		default:
 			// 打印提示符
-			color.Blue.Print("rcon")
-			color.Cyan.Print("@")
-			color.Yellow.Print(clientSetup.addr)
-			color.Cyan.Print(":")
-			color.Yellow.Print(strconv.Itoa(clientSetup.port))
-			color.White.Print(" >")
-			color.Red.Print("#")
-			color.White.Print("> ")
+			printUtil.PS1(clientSetup.Addr, clientSetup.Port)
 			// 读取并处理用户输入
 			if scanner.Scan() {
 				stdInput = scanner.Text()
@@ -94,16 +88,22 @@ func newSession(clientSetup client) (err error) {
 			result, err := conn.SendCommand(stdInput)
 			switch {
 			case err == nil:
-				continue
+				if result == "" {
+					log.Info().Msg("no response.")
+					continue
+				}
 			case errors.Is(err, errors.New("connection closed")):
 				log.Error().Msg("connection closed, reconnecting...")
 				for i := 3; i == 0 || err != nil; i-- {
 					time.Sleep(time.Second * 5)
 					log.Info().Msgf("retry num: %d, reconnecting in %d seconds...", i, 5)
-					conn, err = rcon.Dial("rcon://"+clientSetup.addr+":"+strconv.Itoa(clientSetup.port), clientSetup.password)
+					conn, err = rcon.Dial("rcon://"+clientSetup.Addr+":"+strconv.Itoa(clientSetup.Port), clientSetup.Password)
 				}
 				if err != nil {
 					log.Error().AnErr("conn error:", err).Msgf("can't connect to server")
+					func(conn *rcon.Conn) {
+						_ = conn.Close()
+					}(conn)
 					break
 				}
 			}
@@ -111,15 +111,48 @@ func newSession(clientSetup client) (err error) {
 				log.Error().AnErr("command error:", err).Msg("can't execute command")
 				continue
 			}
-			if result == "" {
-				log.Info().Msg("no response.")
-				continue
-			}
 			log.Info().Msg(result)
 		}
 	}
+}
+
+// ExecCommand 执行服务器的RCON命令。
+// 该函数通过RCON协议连接到服务器，并发送指定的命令，然后返回命令的结果或错误。
+// 参数:
+//   - clientSetup: 包含连接信息（地址、端口和密码）的客户端设置指针。
+//   - cmd: 指向要发送的命令的指针。
+//
+// 返回值:
+//   - string: 服务器对命令的响应结果。
+//   - error: 如果连接、发送命令或连接关闭时发生错误，则返回该错误。
+func ExecCommand(clientSetup *types.Client, cmd *string) (result string, err error) {
+	// 设置日志输出格式和时间格式。
+	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+	log := zerolog.New(output).With().Timestamp().Logger()
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+	// 根据客户端设置，尝试建立与服务器的RCON连接。
+	conn, err := rcon.Dial("rcon://"+(*clientSetup).Addr+":"+strconv.Itoa(clientSetup.Port), (*clientSetup).Password)
+	if err != nil {
+		// 如果连接失败，记录错误并返回。
+		log.Error().AnErr("conn error:", err).Msgf("can't connect to server")
+		return "", err
+	}
+	// 确保连接在函数返回前关闭。
 	defer func(conn *rcon.Conn) {
 		_ = conn.Close()
 	}(conn)
+	// 发送命令并接收结果。
+	result, err = conn.SendCommand(*cmd)
+	// 记录发送的命令。
+	log.Info().Msgf("command: \"%s\" sended!", *cmd)
+	if err != nil {
+		// 如果发送命令时发生错误，记录错误。
+		log.Error().AnErr("send command error:", err).Msgf("can't send command: %d", cmd)
+	}
+	if result == "" {
+		// 如果命令的响应结果为空，记录警告信息。
+		log.Warn().Msgf("response is empty!")
+	}
 	return
 }

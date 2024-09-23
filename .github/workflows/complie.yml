@@ -6,10 +6,18 @@
   permissions:
     contents: write
   jobs:
+    changelog:
+      runs-on: ubuntu-latest
+      steps:
+        - name: "✏️ Generate release changelog"
+          uses: heinrichreimer/action-github-changelog-generator@v2.3
+          with:
+            token: ${{ secrets.GITHUB_TOKEN }}
     windows-amd64:
       name: "compile for win-amd64"
       runs-on:
         - windows-latest
+      needs: changelog
       steps:
         - name: "Checkout"
           uses: actions/checkout@v4
@@ -33,16 +41,11 @@
             GOARCH: amd64
             GO111MODULE: on
             CGO_ENABLED: 0
-        - name: upload artifact
-          uses: actions/upload-artifact@v4
-          with:
-            name: trc_windows_amd64
-            path: target/trc_amd64.exe
         - name: publish release
           uses: softprops/action-gh-release@v2
           if: startsWith(github.ref, 'refs/tags/v')
           with:
-            body_path: RELEASE.md
+            body: ${{needs.changelog.output.changelog}}
             make_latest: true
             draft: false
             prerelease: false
@@ -53,6 +56,7 @@
       name: "compile for win-arm64"
       runs-on:
         - windows-latest
+      needs: changelog
       steps:
         - name: "Checkout"
           uses: actions/checkout@v4
@@ -76,16 +80,11 @@
             GOARCH: arm64
             GO111MODULE: on
             CGO_ENABLED: 0
-        - name: upload artifact
-          uses: actions/upload-artifact@v4
-          with:
-            name: trc_windows_arm64
-            path: target/trc_arm64.exe
         - name: publish release
           uses: softprops/action-gh-release@v2
           if: startsWith(github.ref, 'refs/tags/v')
           with:
-            body_path: RELEASE.md
+            body: ${{needs.changelog.output.changelog}}
             make_latest: true
             draft: false
             prerelease: false
@@ -96,6 +95,7 @@
       name: "compile for linux-amd64"
       runs-on:
         - ubuntu-latest
+      needs: changelog
       steps:
         - name: "Checkout"
           uses: actions/checkout@v4
@@ -119,16 +119,11 @@
             GOARCH: amd64
             GO111MODULE: on
             CGO_ENABLED: 0
-        - name: upload artifact
-          uses: actions/upload-artifact@v4
-          with:
-            name: trc_linux_amd64
-            path: target/trc_linux_amd64
         - name: publish release
           uses: softprops/action-gh-release@v2
           if: startsWith(github.ref, 'refs/tags/v')
           with:
-            body_path: RELEASE.md
+            body: ${{needs.changelog.output.changelog}}
             make_latest: true
             draft: false
             prerelease: false
@@ -139,6 +134,7 @@
       name: "compile for linux-arm64"
       runs-on:
         - ubuntu-latest
+      needs: changelog
       steps:
         - name: "Checkout"
           uses: actions/checkout@v4
@@ -162,16 +158,11 @@
             GOARCH: arm64
             GO111MODULE: on
             CGO_ENABLED: 0
-        - name: upload artifact
-          uses: actions/upload-artifact@v4
-          with:
-            name: trc_linux_arm64
-            path: target/trc_linux_arm64
         - name: publish release
           uses: softprops/action-gh-release@v2
           if: startsWith(github.ref, 'refs/tags/v')
           with:
-            body_path: RELEASE.md
+            body: ${{needs.changelog.output.changelog}}
             make_latest: true
             draft: false
             prerelease: false
@@ -182,6 +173,7 @@
       name: "compile for linux-loong64"
       runs-on:
         - ubuntu-latest
+      needs: changelog
       steps:
         - name: "Checkout"
           uses: actions/checkout@v4
@@ -205,16 +197,11 @@
             GOARCH: loong64
             GO111MODULE: on
             CGO_ENABLED: 0
-        - name: upload artifact
-          uses: actions/upload-artifact@v4
-          with:
-            name: trc_linux_loong64
-            path: target/trc_linux_loong64
         - name: publish release
           uses: softprops/action-gh-release@v2
           if: startsWith(github.ref, 'refs/tags/v')
           with:
-            body_path: RELEASE.md
+            body: ${{needs.changelog.output.changelog}}
             make_latest: true
             draft: false
             prerelease: false
@@ -225,6 +212,7 @@
       name: "compile for macos-arm64"
       runs-on:
         - macos-latest
+      needs: changelog
       steps:
         - name: "Checkout"
           uses: actions/checkout@v4
@@ -248,19 +236,54 @@
             GOARCH: arm64
             GO111MODULE: on
             CGO_ENABLED: 0
-        - name: upload artifact
-          uses: actions/upload-artifact@v4
-          with:
-            name: trc_darwin_arm64
-            path: target/trc_darwin_arm64
+
         - name: publish release
           uses: softprops/action-gh-release@v2
           if: startsWith(github.ref, 'refs/tags/v')
           with:
-            body_path: RELEASE.md
+            body: ${{needs.changelog.output.changelog}}
             make_latest: true
             draft: false
             prerelease: false
             fail_on_unmatched_files: true
             files: |
               target/trc_darwin_arm64
+    macos-amd64:
+      name: "compile for macos-amd64"
+      runs-on:
+        - macos-latest
+      needs: changelog
+      steps:
+        - name: "Checkout"
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+        - name: "Setup go"
+          uses: actions/setup-go@v5
+          with:
+            go-version: '>=1.23'
+            check-latest: true
+        - name: "vendor"
+          run: |
+            mkdir -p vendor
+            go mod vendor
+            go mod tidy
+        - name: "Build macos"
+          run: |
+            go build -ldflags='-s -w' -o target/trc_darwin_amd64
+          env:
+            GOOS: darwin
+            GOARCH: amd64
+            GO111MODULE: on
+            CGO_ENABLED: 0
+        - name: publish release
+          uses: softprops/action-gh-release@v2
+          if: startsWith(github.ref, 'refs/tags/v')
+          with:
+            body: ${{needs.changelog.output.changelog}}
+            make_latest: true
+            draft: false
+            prerelease: false
+            fail_on_unmatched_files: true
+            files: |
+              target/trc_darwin_amd64

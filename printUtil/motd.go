@@ -1,8 +1,8 @@
-package main
+package printUtil
 
 import "github.com/gookit/color"
 
-func motd() {
+func Hello() {
 	color.Red.Println(` ______ __  __   __  __  __  ______  ______  ______  __   __  ______  __      __  ______  __   __  ______ `)
 	color.Yellow.Println(`/\__  _/\ \/\ "-.\ \/\ \_\ \/\  == \/\  ___\/\  __ \/\ "-.\ \/\  ___\/\ \    /\ \/\  ___\/\ "-.\ \/\__  _\`)
 	color.Hex("800080").Println(`\/_/\ \\ \ \ \ \-.  \ \____ \ \  __<\ \ \___\ \ \/\ \ \ \-.  \ \ \___\ \ \___\ \ \ \  __\\ \ \-.  \/_/\ \/`)
