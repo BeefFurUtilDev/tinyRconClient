@@ -1,7 +1,7 @@
 package connFunc
 
 import (
-	"github.com/Mr-Ao-Dragon/tinyRconClient/types"
+	"github.com/BeefFurUtilDev/tinyRconClient/types"
 	"os"
 	"testing"
 )
