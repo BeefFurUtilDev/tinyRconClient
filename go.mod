@@ -1,4 +1,4 @@
-module github.com/Mr-Ao-Dragon/tinyRconClient
+module github.com/BeefFurUtilDev/tinyRconClient
 
 go 1.23.0
 

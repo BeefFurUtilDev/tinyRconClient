@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/Mr-Ao-Dragon/tinyRconClient/connFunc"
-	"github.com/Mr-Ao-Dragon/tinyRconClient/printUtil"
-	"github.com/Mr-Ao-Dragon/tinyRconClient/types"
+	"github.com/BeefFurUtilDev/tinyRconClient/connFunc"
+	"github.com/BeefFurUtilDev/tinyRconClient/printUtil"
+	"github.com/BeefFurUtilDev/tinyRconClient/types"
 	"github.com/rs/zerolog"
 	"os"
 	"time"
