@@ -156,11 +156,11 @@ func ExecCommand(clientSetup *types.Client, cmd *string) (result string, err err
 	}
 	return
 }
-func ExecCommandWithInput(clientSetup *types.Client, ch *chan string) (err error) {
+func ExecCommandWithInput(clientSetup *types.Client, input *chan string, outPut *chan string) (err error) {
 	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	log := zerolog.New(output).With().Timestamp().Logger()
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	isClose := false
+	isOpen := true
 	conn, err := rcon.Dial("rcon://"+(*clientSetup).Addr+":"+strconv.Itoa(clientSetup.Port), (*clientSetup).Password)
 	if err != nil {
 		log.Error().AnErr("conn error:", err).Msgf("can't connect to server")
@@ -169,23 +169,26 @@ func ExecCommandWithInput(clientSetup *types.Client, ch *chan string) (err error
 	defer func(conn *rcon.Conn) {
 		_ = conn.Close()
 	}(conn)
-	for isClose {
-		val, ok := <-*ch
+	for isOpen {
+		val, ok := <-*input
 		if !ok {
-			isClose = true
+			isOpen = false
 			err = errors.New("read channel data failed")
 			log.Error().AnErr("read channel data failed", err).Msg("chan err!")
+			continue
 		}
 		if val == "" {
-			isClose = true
+			isOpen = false
 		} else {
 			result, err := conn.SendCommand(val)
 			if err != nil {
+				*outPut <- fmt.Sprintf("exec fail with: %s", err.Error())
 				log.Error().AnErr("send command error:", err).Msgf("can't send command: %d", val)
 			} else {
-				log.Info().Msgf("command: \"%s\" sended!", val)
+				*outPut <- fmt.Sprintf("command: \"%s\" sended!", val)
+				*outPut <- result
 				if result == "" {
-					log.Warn().Msgf("response is empty!")
+					*outPut <- "response is empty!"
 				}
 			}
 			continue
