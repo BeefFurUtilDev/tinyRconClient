@@ -156,3 +156,40 @@ func ExecCommand(clientSetup *types.Client, cmd *string) (result string, err err
 	}
 	return
 }
+func ExecCommandWithInput(clientSetup *types.Client, ch *chan string) (err error) {
+	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+	log := zerolog.New(output).With().Timestamp().Logger()
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	isClose := false
+	conn, err := rcon.Dial("rcon://"+(*clientSetup).Addr+":"+strconv.Itoa(clientSetup.Port), (*clientSetup).Password)
+	if err != nil {
+		log.Error().AnErr("conn error:", err).Msgf("can't connect to server")
+		return err
+	}
+	defer func(conn *rcon.Conn) {
+		_ = conn.Close()
+	}(conn)
+	for isClose {
+		val, ok := <-*ch
+		if !ok {
+			isClose = true
+			err = errors.New("read channel data failed")
+			log.Error().AnErr("read channel data failed", err).Msg("chan err!")
+		}
+		if val == "" {
+			isClose = true
+		} else {
+			result, err := conn.SendCommand(val)
+			if err != nil {
+				log.Error().AnErr("send command error:", err).Msgf("can't send command: %d", val)
+			} else {
+				log.Info().Msgf("command: \"%s\" sended!", val)
+				if result == "" {
+					log.Warn().Msgf("response is empty!")
+				}
+			}
+			continue
+		}
+	}
+	return nil
+}
