@@ -3,6 +3,8 @@
     push:
       tags:
         - '*'
+    pull_request_target:
+      types: [closed]
   permissions:
     contents: write
   jobs:
