@@ -147,6 +147,7 @@ func ExecCommand(clientSetup *types.Client, cmd *string) (result string, err err
 	return
 }
 func ExecCommandWithInput(clientSetup *types.Client, input, outPut *chan string) (err error) {
+
 	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	log := zerolog.New(output).With().Timestamp().Logger()
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -173,7 +174,8 @@ func ExecCommandWithInput(clientSetup *types.Client, input, outPut *chan string)
 			result, err := clientSetup.Session.Execute(val)
 			if err != nil {
 				*outPut <- fmt.Sprintf("exec fail with: %s", err.Error())
-				log.Error().AnErr("send command error:", err).Msgf("can't send command: %s", val)
+				log.Error().AnErr("send command error:", err).Msgf("can't send command: %d", val)
+
 			} else {
 				*outPut <- fmt.Sprintf("command: \"%s\" sended!", val)
 				*outPut <- result
