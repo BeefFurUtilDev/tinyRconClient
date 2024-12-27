@@ -13,11 +13,11 @@ import (
 
 // 全局变量定义
 var (
-	addr       = flag.String("addr", "localhost", "address of the server")        // 服务器地址，默认为localhost
-	port       = flag.Int("port", 25575, "port of the server")                    // 服务器端口，默认为25575
+	addr       = flag.String("addr", "localhost", "address of the server")        // 服务器地址，默认为 localhost
+	port       = flag.Int("port", 25575, "port of the server")                    // 服务器端口，默认为 25575
 	password   = flag.String("pass", "", "password of the server")                // 服务器密码，必需项
-	launchType = flag.String("mode", "console", "launch console or exec command") // 启动模式，可以是console或exec，默认为console
-	command    = flag.String("command", "list", "command to execute")             // 执行的命令，默认为list
+	launchType = flag.String("mode", "console", "launch console or exec command") // 启动模式，可以是 console 或 exec，默认为 console
+	command    = flag.String("command", "list", "command to execute")             // 执行的命令，默认为 list
 )
 
 // main函数是程序的入口点
@@ -53,7 +53,7 @@ func main() {
 	case "console":
 		// 在控制台模式下启动会话
 		printUtil.Hello()
-		err := connFunc.NewSession(*clientSetup)
+		err := connFunc.NewSession(clientSetup)
 		if err != nil {
 			log.Warn().AnErr("session error:", err).Msgf("")
 		}

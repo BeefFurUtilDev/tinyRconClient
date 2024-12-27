@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/BeefFurUtilDev/tinyRconClient/printUtil"
 	"github.com/BeefFurUtilDev/tinyRconClient/types"
-	"github.com/jltobler/go-rcon"
+	"github.com/gorcon/rcon"
 	"github.com/rs/zerolog"
 	"io"
 	"os"
@@ -25,7 +25,7 @@ import (
 // 返回值:
 //
 //	错误: 如果在建立连接或执行命令时发生错误，则返回相应的错误。
-func NewSession(clientSetup types.Client) (err error) {
+func NewSession(clientSetup *types.Client) (err error) {
 	// 初始化日志输出格式和时间格式
 	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	log := zerolog.New(output).With().Timestamp().Logger()
@@ -33,15 +33,15 @@ func NewSession(clientSetup types.Client) (err error) {
 	log.Info().Msg("starting session...")
 
 	// 尝试连接到RCON服务器
-	conn, err := rcon.Dial("rcon://"+clientSetup.Addr+":"+strconv.Itoa(clientSetup.Port), clientSetup.Password)
+	err = clientSetup.NewSession()
 	if err != nil {
 		log.Error().AnErr("conn error:", err).Msgf("can't connect to server")
 		return err
 	}
 	// 确保在函数结束时关闭连接
-	defer func(conn *rcon.Conn) {
-		_ = conn.Close()
-	}(conn)
+	defer func() {
+		err = clientSetup.CloseSession()
+	}()
 	// 初始化变量以读取标准输入和处理中断信号
 	var stdInput string
 	interruptChan := make(chan os.Signal, 1)
@@ -53,14 +53,12 @@ func NewSession(clientSetup types.Client) (err error) {
 		case <-interruptChan:
 			// 当收到中断信号时，退出循环
 			fmt.Println("\nCaught ^C, exiting...")
-			return nil
+			return clientSetup.CloseSession()
 		default:
 			// 打印提示符
 			printUtil.PS1(clientSetup.Addr, clientSetup.Port)
 			// 读取并处理用户输入
-			if scanner.Scan() {
-				stdInput = scanner.Text()
-			} else {
+			if !scanner.Scan() {
 				// 处理扫描错误
 				err := scanner.Err()
 				if err != nil {
@@ -75,6 +73,7 @@ func NewSession(clientSetup types.Client) (err error) {
 					}
 				}
 			}
+			stdInput = scanner.Text()
 
 			// 处理空输入或exit命令
 			if stdInput == "" {
@@ -82,32 +81,23 @@ func NewSession(clientSetup types.Client) (err error) {
 				continue
 			}
 			if stdInput == "exit" || stdInput == "stop" {
-				return nil
+				defer os.Exit(0)
+				log.Info().Msg("ok, bye!")
+				return clientSetup.CloseSession()
 			}
 			// 发送命令并处理结果
-			result, err := conn.SendCommand(stdInput)
-			switch {
-			case err == nil:
+			var result string
+			result, err = clientSetup.Session.Execute(stdInput)
+			switch err {
+			case nil:
 				if result == "" {
 					log.Info().Msg("no response.")
 					continue
 				}
-			case errors.Is(err, errors.New("connection closed")):
-				log.Error().Msg("connection closed, reconnecting...")
-				for i := 3; i == 0 || err != nil; i-- {
-					time.Sleep(time.Second * 5)
-					log.Info().Msgf("retry num: %d, reconnecting in %d seconds...", i, 5)
-					conn, err = rcon.Dial("rcon://"+clientSetup.Addr+":"+strconv.Itoa(clientSetup.Port), clientSetup.Password)
-				}
-				if err != nil {
-					log.Error().AnErr("conn error:", err).Msgf("can't connect to server")
-					func(conn *rcon.Conn) {
-						_ = conn.Close()
-					}(conn)
-					break
-				}
-			}
-			if err != nil {
+			case errors.New("connection closed"):
+				err = clientSetup.ReSession()
+				continue
+			default:
 				log.Error().AnErr("command error:", err).Msg("can't execute command")
 				continue
 			}
@@ -132,7 +122,7 @@ func ExecCommand(clientSetup *types.Client, cmd *string) (result string, err err
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	// 根据客户端设置，尝试建立与服务器的RCON连接。
-	conn, err := rcon.Dial("rcon://"+(*clientSetup).Addr+":"+strconv.Itoa(clientSetup.Port), (*clientSetup).Password)
+	err = clientSetup.NewSession()
 	if err != nil {
 		// 如果连接失败，记录错误并返回。
 		log.Error().AnErr("conn error:", err).Msgf("can't connect to server")
@@ -141,9 +131,9 @@ func ExecCommand(clientSetup *types.Client, cmd *string) (result string, err err
 	// 确保连接在函数返回前关闭。
 	defer func(conn *rcon.Conn) {
 		_ = conn.Close()
-	}(conn)
+	}(clientSetup.Session)
 	// 发送命令并接收结果。
-	result, err = conn.SendCommand(*cmd)
+	result, err = clientSetup.Session.Execute(*cmd)
 	// 记录发送的命令。
 	log.Info().Msgf("command: \"%s\" sended!", *cmd)
 	if err != nil {
@@ -156,7 +146,8 @@ func ExecCommand(clientSetup *types.Client, cmd *string) (result string, err err
 	}
 	return
 }
-func ExecCommandWithInput(clientSetup *types.Client, input *chan string, outPut *chan string) (err error) {
+func ExecCommandWithInput(clientSetup *types.Client, input, outPut *chan string) (err error) {
+
 	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	log := zerolog.New(output).With().Timestamp().Logger()
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -180,10 +171,11 @@ func ExecCommandWithInput(clientSetup *types.Client, input *chan string, outPut 
 		if val == "" {
 			isOpen = false
 		} else {
-			result, err := conn.SendCommand(val)
+			result, err := clientSetup.Session.Execute(val)
 			if err != nil {
 				*outPut <- fmt.Sprintf("exec fail with: %s", err.Error())
 				log.Error().AnErr("send command error:", err).Msgf("can't send command: %d", val)
+
 			} else {
 				*outPut <- fmt.Sprintf("command: \"%s\" sended!", val)
 				*outPut <- result

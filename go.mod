@@ -3,7 +3,9 @@ module github.com/BeefFurUtilDev/tinyRconClient
 go 1.23.0
 
 require (
+	github.com/creack/pty v1.1.24
 	github.com/gookit/color v1.5.4
+	github.com/gorcon/rcon v1.4.0
 	github.com/jltobler/go-rcon v0.3.0
 	github.com/rs/zerolog v1.33.0
 )
