@@ -51,7 +51,7 @@ func main() {
 		log.Info().Msgf("result: %s", result)
 	case "console":
 		// 在控制台模式下启动会话
-		err := connFunc.NewSession(clientSetup)
+		err := connFunc.StartSession(clientSetup)
 		if err != nil {
 			log.Warn().AnErr("session error:", err).Msgf("")
 		}

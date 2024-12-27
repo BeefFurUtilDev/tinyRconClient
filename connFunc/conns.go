@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-// NewSession 建立一个新的RCON会话。
+// StartSession 建立一个新的RCON会话。
 // 它尝试连接到一个Minecraft服务器，然后在一个循环中读取用户输入的命令并将其发送到服务器，直到会话被中断或用户决定退出。
 // 参数:
 //
@@ -25,7 +25,7 @@ import (
 // 返回值:
 //
 //	错误: 如果在建立连接或执行命令时发生错误，则返回相应的错误。
-func NewSession(clientSetup *types.Client) (err error) {
+func StartSession(clientSetup *types.Client) (err error) {
 	// 初始化日志输出格式和时间格式
 	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	log := zerolog.New(output).With().Timestamp().Logger()
