@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/BeefFurUtilDev/tinyRconClient/connFunc"
-	"github.com/BeefFurUtilDev/tinyRconClient/printUtil"
 	"github.com/BeefFurUtilDev/tinyRconClient/types"
 	"github.com/rs/zerolog"
 	"os"
@@ -52,7 +51,6 @@ func main() {
 		log.Info().Msgf("result: %s", result)
 	case "console":
 		// 在控制台模式下启动会话
-		printUtil.Hello()
 		err := connFunc.NewSession(clientSetup)
 		if err != nil {
 			log.Warn().AnErr("session error:", err).Msgf("")

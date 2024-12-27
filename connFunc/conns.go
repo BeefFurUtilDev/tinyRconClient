@@ -30,6 +30,7 @@ func NewSession(clientSetup *types.Client) (err error) {
 	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	log := zerolog.New(output).With().Timestamp().Logger()
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	printUtil.Hello()
 	log.Info().Msg("starting session...")
 
 	// 尝试连接到RCON服务器
@@ -47,6 +48,7 @@ func NewSession(clientSetup *types.Client) (err error) {
 	interruptChan := make(chan os.Signal, 1)
 	signal.Notify(interruptChan, os.Interrupt, syscall.SIGTERM)
 	scanner := bufio.NewScanner(os.Stdin)
+
 	// 主循环：处理命令输入和中断信号
 	for {
 		select {
