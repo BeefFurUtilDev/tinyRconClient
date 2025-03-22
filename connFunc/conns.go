@@ -4,16 +4,17 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/BeefFurUtilDev/tinyRconClient/printUtil"
-	"github.com/BeefFurUtilDev/tinyRconClient/types"
-	"github.com/gorcon/rcon"
-	"github.com/rs/zerolog"
 	"io"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/BeefFurUtilDev/tinyRconClient/printUtil"
+	"github.com/BeefFurUtilDev/tinyRconClient/types"
+	"github.com/gorcon/rcon"
+	"github.com/rs/zerolog"
 )
 
 // StartSession 建立一个新的RCON会话。
@@ -34,7 +35,8 @@ func StartSession(clientSetup *types.Client) (err error) {
 	log.Info().Msg("starting session...")
 
 	// 尝试连接到RCON服务器
-	err = clientSetup.NewSession()
+	err = clientSetup.DomainToAddress().ProcessError().NewSession()
+	close(clientSetup.Errors)
 	if err != nil {
 		log.Error().AnErr("conn error:", err).Msgf("can't connect to server")
 		return err
@@ -124,7 +126,7 @@ func ExecCommand(clientSetup *types.Client, cmd *string) (result string, err err
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	// 根据客户端设置，尝试建立与服务器的RCON连接。
-	err = clientSetup.NewSession()
+	err = clientSetup.DomainToAddress().ProcessError().NewSession()
 	if err != nil {
 		// 如果连接失败，记录错误并返回。
 		log.Error().AnErr("conn error:", err).Msgf("can't connect to server")
