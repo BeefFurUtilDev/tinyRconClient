@@ -8,4 +8,5 @@ type Client struct {
 	Password string
 	Session  *rcon.Conn
 	Stat     bool
+	Errors   chan error
 }

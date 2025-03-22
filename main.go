@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/BeefFurUtilDev/tinyRconClient/connFunc"
 	"github.com/BeefFurUtilDev/tinyRconClient/types"
 	"github.com/rs/zerolog"
-	"os"
-	"time"
 )
 
 // 全局变量定义
@@ -30,7 +31,12 @@ func main() {
 	flag.Parse()
 
 	// 设置客户端配置
-	clientSetup := &types.Client{Addr: *addr, Port: *port, Password: *password}
+	clientSetup := &types.Client{
+		Addr:     *addr,
+		Port:     *port,
+		Password: *password,
+		Errors:   make(chan error),
+	}
 
 	// 根据启动类型执行相应逻辑
 	switch *launchType {
